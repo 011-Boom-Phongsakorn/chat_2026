@@ -7,7 +7,7 @@ const UserSchema = new Schema(
     fullname: { type: String, required: true, minlength: 4 }, // แก้เป็น required และ minlength
     email: { type: String, required: true, unique: true }, // แก้เป็น required
     password: { type: String, required: true, minlength: 6 }, // แก้เป็น required และ minlength
-    imageUrl: { type: String }, // แก้เป็น required
+    profilePic: { type: String, default: "" }, // แก้เป็น required
   },
   { timestamps: true },
 );
