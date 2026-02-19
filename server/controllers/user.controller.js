@@ -7,7 +7,7 @@ const secret = process.env.SECRET;
 const node_mode = process.env.node_mode;
 
 exports.register = async (req, res) => {
-  const { fullname, email, password } = req.body;
+  const { fullname, email, password, profilePic } = req.body;
   if (!fullname || !email || !password) {
     return res.status(400).send({
       message: "Please Provide All Required!",
@@ -27,6 +27,7 @@ exports.register = async (req, res) => {
       fullname,
       email,
       password: hashedPassword,
+      profilePic,
     });
     //Auto login after registration
     jwt.sign(
@@ -48,8 +49,9 @@ exports.register = async (req, res) => {
         res.status(201).send({
           message: "User registered and logged in successfully!",
           id: user._id,
+          fullname,
           email,
-          accessToken: token,
+          profilePic,
         });
       },
     );
