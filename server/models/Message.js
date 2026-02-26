@@ -1,16 +1,15 @@
 const mongoose = require("mongoose");
+const { Schema, model } = mongoose;
 
-const messageSchema = new mongoose.Schema(
+const messageSchema = Schema(
   {
-    sender: {
+    text: { type: String },
+    file: { type: String },
+    senderId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
     },
-    recipient: { type: String, required: true },
-    message: { type: String, default: null },
-    image: { type: String, default: null },
-    read: { type: Boolean },
+    recipientId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },
   { timestamps: true },
 );

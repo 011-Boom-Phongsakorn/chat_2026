@@ -1,34 +1,72 @@
 const MessageModel = require("../models/Message");
+const User = require("../models/User");
+const cloudinary = require("../configs/cloudinary");
 
-const getMessages = async (req, res) => {
+const { getReceiverSocketId, io } = require("../lib/socket");
+
+exports.getUsersForSidebar = async (req, res) => {
   try {
-    const { room } = req.params;
-    const messages = await MessageModel.find({ room })
-      .sort({ createdAt: 1 })
-      .limit(100);
+    const loggedInUserId = req.user._id;
+    const filteredUsers = await User.find({
+      _id: { $ne: loggedInUserId },
+    }).select("-password");
+    res.status(200).json(filteredUsers);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Internal Server Error while getting users info" });
+  }
+};
 
+exports.getMessage = async (req, res) => {
+  try {
+    const myId = req.user._id;
+    const { id: userToChat } = req.params;
+    const messages = await MessageModel.find({
+      $or: [
+        {
+          senderId: myId,
+          recipientId: userToChat,
+        },
+        {
+          senderId: userToChat,
+          recipientId: myId,
+        },
+      ],
+    });
     res.json(messages);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Internal Server Error while getting message" });
   }
 };
 
-const markAsRead = async (req, res) => {
+exports.sendMessage = async (req, res) => {
   try {
-    const { room } = req.params;
-    await MessageModel.updateMany(
-      { room, read: false },
-      { $set: { read: true } },
-    );
-    res.json({ message: "Messages marked as read" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
+    const { id: recipientId } = req.params;
+    if (!recipientId) {
+      return res.status(400).jsn({ message: "Reciient Id is missing" });
+    }
+    const senderId = req.user._id;
+    const { text, file } = req.body;
+    let fileUrl = "";
+    if (file) {
+      const uploadResponse = await cloudinary.uploader.upload(file);
+      fileUrl = uploadResponse.secure_url;
+    }
+    const newMessage = await new MessageModel({
+      senderId,
+      recipientId,
+      text,
+      file: fileUrl,
+    });
 
-module.exports = {
-  getMessages,
-  markAsRead,
+    await newMessage.save();
+    res.json({ message: newMessage });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Internal Server Error while sending message" });
+  }
 };
